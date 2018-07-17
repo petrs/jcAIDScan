@@ -10,7 +10,7 @@ import time
 # packageFormat: package_major package_minor package_len AID
 
 SCRIPT_VERSION = "0.1.0"
-base_path = 'h:\\Documents\\Develop\\jcAIDScan'
+BASE_PATH = '.'
 
 
 AID_VERSION_MAP = {"000107A0000000620001": "2.1",  # java.lang
@@ -211,19 +211,19 @@ package_template = b'\xA0\x00\x00\x00\x62\x01\x01'
 
 def check(import_section, package, uninstall):
     print(import_section)
-    f = open('{0}\\template\\test\\javacard\\Import.cap'.format(base_path), 'wb')
+    f = open('{0}\\template\\test\\javacard\\Import.cap'.format(BASE_PATH), 'wb')
     f.write(bytes.fromhex(import_section))
     f.close()
 
     # create new
-    shutil.make_archive('test.cap', 'zip', '{0}\\template\\'.format(base_path))
+    shutil.make_archive('test.cap', 'zip', '{0}\\template\\'.format(BASE_PATH))
 
     package_hex = package.serialize()
 
     # remove zip appendix
     os.remove('test.cap')
     os.rename('test.cap.zip', 'test.cap')
-    copyfile('test.cap', '{0}\\results\\test_{1}.cap'.format(base_path, package_hex))
+    copyfile('test.cap', '{0}\\results\\test_{1}.cap'.format(BASE_PATH, package_hex))
 
     uninstall = True
     if uninstall:
@@ -234,7 +234,7 @@ def check(import_section, package, uninstall):
 
     result = result.stdout.decode("utf-8")
     # print(result)
-    f = open('{0}\\results\\{1}.txt'.format(base_path, package_hex), 'w')
+    f = open('{0}\\results\\{1}.txt'.format(BASE_PATH, package_hex), 'w')
     f.write(result)
     f.close()
 
@@ -415,7 +415,7 @@ def get_card_info(card_name):
 
 def save_scan(card_info, supported):
     file_name = "{0}_AIDSUPPORT_{1}.csv".format(card_info.card_name, card_info.atr)
-    f = open('{0}\\{1}.txt'.format(base_path, file_name), 'w')
+    f = open('{0}\\{1}.txt'.format(BASE_PATH, file_name), 'w')
 
     f.write("jcAIDScan version;{0}\n".format(SCRIPT_VERSION))
     f.write("Card ATR;{0}\n".format(card_info.atr))
@@ -428,6 +428,30 @@ def save_scan(card_info, supported):
                                                aid.get_first_jcapi_version()))
 
     f.close()
+
+def scan_subpackages(supported):
+    # scan user-defined package
+    supported = []
+    #test1 = TestCfg(1, 1, 0, 1, 0x62, 0x62, 0, 1, 0, 1, PACKAGE_TEMPLATE)
+    test1 = TestCfg(1, 2, 0, 10, 0x62, 0x62, 0, 10, 0, 20, PACKAGE_TEMPLATE)
+    run_scan(test1, supported)
+    print_supported(supported)
+
+    # now check supported packages with appended 1 byte
+    is_installed = True
+    supported_01 = []
+
+    new_package_aid = []
+    for supported_aid in supported:
+        for val in range(0, 10):
+            new_package_aid[:] = supported_aid.aid
+            new_package_aid.append(val)
+            new_package = PackageAID(new_package_aid, supported_aid.major, supported_aid.minor)
+            is_installed = test_aid(new_package, is_installed, supported_01)
+
+    # print all results
+    print_supported(supported)
+    print_supported(supported_01)
 
 
 # if aid supported, try also aid + 01 and aid + 01 01
@@ -445,31 +469,6 @@ def main():
     save_scan(card_info, supported)
 
     return
-
-    # scan user-defined package
-    supported = []
-    #test1 = TestCfg(1, 1, 0, 1, 0x62, 0x62, 0, 1, 0, 1, PACKAGE_TEMPLATE)
-    test1 = TestCfg(1, 2, 0, 10, 0x62, 0x62, 0, 10, 0, 20, PACKAGE_TEMPLATE)
-    run_scan(test1, supported)
-    print_supported(supported)
-
-    # now check supported packages with appended 1 byte
-    is_installed = True
-    supported_01 = []
-
-    check_longer = False
-    if check_longer:
-        new_package_aid = []
-        for supported_aid in supported:
-            for val in range(0, 10):
-                new_package_aid[:] = supported_aid.aid
-                new_package_aid.append(val)
-                new_package = PackageAID(new_package_aid, supported_aid.major, supported_aid.minor);
-                is_installed = test_aid(new_package, is_installed, supported_01)
-
-    # print all results
-    print_supported(supported)
-    print_supported(supported_01)
 
 if __name__ == "__main__":
     #test()
