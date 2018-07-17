@@ -29,8 +29,9 @@ AID_VERSION_MAP = {"000107A0000000620001": "2.1",  # java.lang
                    "000107A0000000620201": "2.1", "010107A0000000620201": "2.1.1", "020107A0000000620201": "2.2.1",
                    "030107A0000000620201": "2.2.2", "040107A0000000620201": "3.0.1", "050107A0000000620201": "3.0.4",
                    "060107A0000000620201": "3.0.5",
-                   # javacardx.biometry (starting directly from version 1.2)
-                   "020107A0000000620202": "2.2.2", "030107A0000000620202": "3.0.5",
+                   # javacardx.biometry (starting directly from version 1.2 - previous versions all from 2.2.2)
+                   "000107A0000000620202": "2.2.2", "000107A0000000620202": "2.2.2", "020107A0000000620202": "2.2.2",
+                   "030107A0000000620202": "3.0.5",
                    "000107A0000000620203": "2.2.2",  # javacardx.external
                    "000107A0000000620204": "3.0.5",  # javacardx.biometry1toN
                    "000107A0000000620005": "3.0.5",  # javacardx.security
@@ -103,6 +104,8 @@ class PackageAID:
             return "javacardx.framework.math"
         if hex_aid == "A000000062020803".lower():
             return "javacardx.framework.tlv"
+        if hex_aid == "A000000062020804".lower():
+            return "javacardx.framework.string"
 
         if hex_aid == "A00000015100".lower():
             return "org.globalplatform"
