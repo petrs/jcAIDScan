@@ -204,7 +204,7 @@ class CardInfo:
         self.gp_i = gp_i
 
 
-javacard_framework = PackageAID(b'\xA0\x00\x00\x00\x62\x01\x01', 1, 3)
+javacard_framework = PackageAID(b'\xA0\x00\x00\x00\x62\x01\x01', 1, 0)
 java_lang = PackageAID(b'\xA0\x00\x00\x00\x62\x00\x01', 1, 0)
 
 package_template = b'\xA0\x00\x00\x00\x62\x01\x01'
