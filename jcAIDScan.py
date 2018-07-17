@@ -4,7 +4,6 @@ import subprocess
 from shutil import copyfile
 import time
 
-# TODO: insert additional ID instead of direct modification
 # TODO: save complete log to separate named file
 # Format Import.cap: 04 00 len num_packages package1 package2 ... packageN
 # packageFormat: package_major package_minor package_len AID
@@ -120,6 +119,7 @@ class PackageAID:
 
         return version
 
+
 class TestCfg:
     min_major = 1
     max_major = 1
@@ -133,6 +133,7 @@ class TestCfg:
     max6 = 2
     package_template = ""
     package_template_bytes = []
+
     def __init__(self, min_major, max_major, min_minor, max_minor, min4, max4, min5, max5,
                  min6, max6, package_template):
         self.min_major = min_major
@@ -415,11 +416,11 @@ def get_card_info(card_name):
 
 def save_scan(card_info, supported):
     file_name = "{0}_AIDSUPPORT_{1}.csv".format(card_info.card_name, card_info.atr)
-    f = open('{0}\\{1}.txt'.format(BASE_PATH, file_name), 'w')
+    f = open('{0}\\{1}'.format(BASE_PATH, file_name), 'w')
 
-    f.write("jcAIDScan version;{0}\n".format(SCRIPT_VERSION))
-    f.write("Card ATR;{0}\n".format(card_info.atr))
-    f.write("Card name;{0}\n".format(card_info.card_name))
+    f.write("jcAIDScan version; {0}\n".format(SCRIPT_VERSION))
+    f.write("Card ATR; {0}\n".format(card_info.atr))
+    f.write("Card name; {0}\n".format(card_info.card_name))
     f.write("CPLC;;\n{0}\n\n".format(card_info.cplc))
 
     f.write("PACKAGE AID; MAJOR VERSION; MINOR VERSION; PACKAGE NAME; INTRODUCING JC API VERSION;\n")
@@ -454,14 +455,28 @@ def scan_subpackages(supported):
     print_supported(supported_01)
 
 
+def prepare_for_testing():
+    # restore default import section
+    imported_packages = []
+    imported_packages.append(javacard_framework)
+    imported_packages.append(java_lang)
+    import_section = format_import(imported_packages)
+    f = open('{0}\\template\\test\\javacard\\Import.cap'.format(BASE_PATH), 'wb')
+    f.write(bytes.fromhex(import_section))
+    f.close()
+
+
 # if aid supported, try also aid + 01 and aid + 01 01
 def main():
     # uninstall any previous installation
     subprocess.run(['gp.exe', '--uninstall', 'test.cap'], stdout=subprocess.PIPE)
     is_installed = False
 
+    # restore template to good known state
+    prepare_for_testing()
+
     # obtain card basic info
-    card_info = get_card_info("Feitian_A40")
+    card_info = get_card_info("")
     # scan standard JC API
     supported = []
     scan_JC_API_305(supported)
