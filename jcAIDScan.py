@@ -8,9 +8,10 @@ import time
 # Format Import.cap: 04 00 len num_packages package1 package2 ... packageN
 # packageFormat: package_major package_minor package_len AID
 
-SCRIPT_VERSION = "0.1.0"
 BASE_PATH = '.'
-
+GP_BASIC_COMMAND = 'gp.exe'
+GP_AUTH_FLAG = ''  # most of the card requires no additional authentication flag
+# GP_AUTH_FLAG = '--emv'  # use of EMV key diversification is used (e.g., G&D cards)
 
 AID_VERSION_MAP = {"000107A0000000620001": "2.1",  # java.lang
                    "000107A0000000620002": "2.2.0",  # java.io
@@ -231,10 +232,10 @@ def check(import_section, package, uninstall):
 
     uninstall = True
     if uninstall:
-        subprocess.run(['gp.exe', '--uninstall', 'test.cap'], stdout=subprocess.PIPE)
+        subprocess.run([GP_BASIC_COMMAND, GP_AUTH_FLAG, '--uninstall', 'test.cap'], stdout=subprocess.PIPE)
 
     # try to install
-    result = subprocess.run(['gp.exe', '--install', 'test.cap', '--d'], stdout=subprocess.PIPE)
+    result = subprocess.run([GP_BASIC_COMMAND, GP_AUTH_FLAG, '--install', 'test.cap', '--d'], stdout=subprocess.PIPE)
 
     result = result.stdout.decode("utf-8")
     # print(result)
@@ -285,7 +286,8 @@ def test():
 def test_aid(tested_package_aid, is_installed, supported_list):
     imported_packages = []
     imported_packages.append(javacard_framework)
-    imported_packages.append(java_lang)
+    # do not import java_lang as default (some cards will then fail to load)
+    #imported_packages.append(java_lang)
     imported_packages.append(tested_package_aid)
 
     import_content = format_import(imported_packages)
@@ -362,35 +364,53 @@ def run_scan(cfg, supported):
     print("#################################################\n")
 
 
-def scan_JC_API_305(supported):
+def scan_JC_API_305(card_info, supported):
     MAX_MAJOR = 1
     #ADDITIONAL_MINOR = 1
     ADDITIONAL_MINOR = 1
     # maximal version (minor/major is always 1 higher than expected from given version of JC SDK)
-    # If highest version is detected, additional inspection is necessary
+    # If highest version is detected, additional inspection is necessary - suspicious (some cards ignore minor)
 
     run_scan(TestCfg(1, MAX_MAJOR, 0, 0 + ADDITIONAL_MINOR, "A0000000620001"), supported)
+    save_scan(card_info, supported)
     run_scan(TestCfg(1, MAX_MAJOR, 0, 0 + ADDITIONAL_MINOR, "A0000000620002"), supported)
+    save_scan(card_info, supported)
     run_scan(TestCfg(1, MAX_MAJOR, 0, 0 + ADDITIONAL_MINOR, "A0000000620003"), supported)
+    save_scan(card_info, supported)
 
     run_scan(TestCfg(1, MAX_MAJOR, 0, 6 + ADDITIONAL_MINOR, "A0000000620101"), supported)
+    save_scan(card_info, supported)
     run_scan(TestCfg(1, MAX_MAJOR, 0, 0 + ADDITIONAL_MINOR, "A000000062010101"), supported)
+    save_scan(card_info, supported)
     run_scan(TestCfg(1, MAX_MAJOR, 0, 6 + ADDITIONAL_MINOR, "A0000000620102"), supported)
+    save_scan(card_info, supported)
 
     run_scan(TestCfg(1, MAX_MAJOR, 0, 6 + ADDITIONAL_MINOR, "A0000000620201"), supported)
+    save_scan(card_info, supported)
     run_scan(TestCfg(1, MAX_MAJOR, 0, 3 + ADDITIONAL_MINOR, "A0000000620202"), supported)
+    save_scan(card_info, supported)
     run_scan(TestCfg(1, MAX_MAJOR, 0, 0 + ADDITIONAL_MINOR, "A0000000620203"), supported)
+    save_scan(card_info, supported)
     run_scan(TestCfg(1, MAX_MAJOR, 0, 0 + ADDITIONAL_MINOR, "A0000000620204"), supported)
+    save_scan(card_info, supported)
     run_scan(TestCfg(1, MAX_MAJOR, 0, 0 + ADDITIONAL_MINOR, "A0000000620205"), supported)
+    save_scan(card_info, supported)
 
     run_scan(TestCfg(1, MAX_MAJOR, 0, 1 + ADDITIONAL_MINOR, "A000000062020801"), supported)
+    save_scan(card_info, supported)
     run_scan(TestCfg(1, MAX_MAJOR, 0, 0 + ADDITIONAL_MINOR, "A00000006202080101"), supported)
+    save_scan(card_info, supported)
     run_scan(TestCfg(1, MAX_MAJOR, 0, 0 + ADDITIONAL_MINOR, "A000000062020802"), supported)
+    save_scan(card_info, supported)
     run_scan(TestCfg(1, MAX_MAJOR, 0, 0 + ADDITIONAL_MINOR, "A000000062020803"), supported)
+    save_scan(card_info, supported)
     run_scan(TestCfg(1, MAX_MAJOR, 0, 0 + ADDITIONAL_MINOR, "A000000062020804"), supported)
+    save_scan(card_info, supported)
 
     run_scan(TestCfg(1, MAX_MAJOR, 0, 0 + ADDITIONAL_MINOR, "A0000000620209"), supported)
+    save_scan(card_info, supported)
     run_scan(TestCfg(1, MAX_MAJOR, 0, 0 + ADDITIONAL_MINOR, "A000000062020901"), supported)
+    save_scan(card_info, supported)
 
     print_supported(supported)
 
@@ -399,7 +419,7 @@ def get_card_info(card_name):
     if card_name == "":
         card_name = input("Please enter card name: ")
 
-    result = subprocess.run(['gp.exe', '--i'], stdout=subprocess.PIPE)
+    result = subprocess.run([GP_BASIC_COMMAND, GP_AUTH_FLAG, '--i'], stdout=subprocess.PIPE)
     result_text = result.stdout.decode("utf-8")
 
     atr_before = "http://smartcard-atr.appspot.com/parse?ATR="
@@ -472,7 +492,8 @@ def prepare_for_testing():
 # if aid supported, try also aid + 01 and aid + 01 01
 def main():
     # uninstall any previous installation
-    subprocess.run(['gp.exe', '--uninstall', 'test.cap'], stdout=subprocess.PIPE)
+    result = subprocess.run([GP_BASIC_COMMAND, GP_AUTH_FLAG, '--uninstall', 'test.cap'], stdout=subprocess.PIPE)
+    result_text = result.stdout.decode("utf-8")
     is_installed = False
 
     # restore template to good known state
@@ -482,7 +503,7 @@ def main():
     card_info = get_card_info("")
     # scan standard JC API
     supported = []
-    scan_JC_API_305(supported)
+    scan_JC_API_305(card_info, supported)
     # create file with results
     save_scan(card_info, supported)
 
