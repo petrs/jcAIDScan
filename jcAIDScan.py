@@ -8,6 +8,7 @@ import time
 # Format Import.cap: 04 00 len num_packages package1 package2 ... packageN
 # packageFormat: package_major package_minor package_len AID
 
+SCRIPT_VERSION = '0.1.1'
 BASE_PATH = '.'
 GP_BASIC_COMMAND = 'gp.exe'
 GP_AUTH_FLAG = ''  # most of the card requires no additional authentication flag
@@ -35,7 +36,7 @@ AID_VERSION_MAP = {"000107A0000000620001": "2.1",  # java.lang
                    "030107A0000000620202": "3.0.5",
                    "000107A0000000620203": "2.2.2",  # javacardx.external
                    "000107A0000000620204": "3.0.5",  # javacardx.biometry1toN
-                   "000107A0000000620005": "3.0.5",  # javacardx.security
+                   "000107A0000000620205": "3.0.5",  # javacardx.security
                    # javacardx.framework.util
                    "000108A000000062020801": "2.2.2", "010108A000000062020801": "3.0.5",
                    "000109A00000006202080101": "2.2.2",  # javacardx.framework.util.intx
@@ -45,6 +46,27 @@ AID_VERSION_MAP = {"000107A0000000620001": "2.1",  # java.lang
                    "000107A0000000620209": "2.2.2",  # javacardx.apdu
                    "000108A000000062020901": "3.0.5",  # javacardx.apdu.util
                    }
+
+AID_NAME_MAP = {"A0000000620001": "java.lang",
+                "A0000000620002": "java.io",
+                "A0000000620003": "java.rmi",
+                "A0000000620101": "javacard.framework",
+                "A000000062010101": "javacard.framework.service",
+                "A0000000620102": "javacard.security",
+                "A0000000620201": "javacardx.crypto",
+                "A0000000620202": "javacardx.biometry",
+                "A0000000620203": "javacardx.external",
+                "A0000000620204": "javacardx.biometry1toN",
+                "A0000000620205": "javacardx.security",
+                "A000000062020801": "javacardx.framework.util",
+                "A00000006202080101":"javacardx.framework.util.intx",
+                "A000000062020802":"javacardx.framework.math",
+                "A000000062020803":"javacardx.framework.tlv",
+                "A000000062020804":"javacardx.framework.string",
+                "A0000000620209": "javacardx.apdu",
+                "A000000062020901": "javacardx.apdu.util",
+                "A00000015100": "org.globalplatform"
+                }
 
 
 class PackageAID:
@@ -58,7 +80,7 @@ class PackageAID:
         self.minor = minor
 
     def get_readable_string(self):
-        return "{0} v{1}.{2} {3}".format(self.get_aid_hex(), self.major, self.minor, self.get_well_known_name())
+        return "{0} v{1}.{2} {3}".format(self.get_well_known_name(), self.major, self.minor, self.get_aid_hex())
 
     def get_length(self):
         return len(self.aid) + 1 + 1 + 1
@@ -72,46 +94,11 @@ class PackageAID:
         return bytes(self.aid).hex()  # will be in lowercase
 
     def get_well_known_name(self):
-        hex_aid = bytes(self.aid).hex() # will be in lowercase
-
-        if hex_aid == "A0000000620001".lower():
-            return "java.lang"
-        if hex_aid == "A0000000620002".lower():
-            return "java.io"
-        if hex_aid == "A0000000620003".lower():
-            return "java.rmi"
-
-        if hex_aid == "A0000000620101".lower():
-            return "javacard.framework"
-        if hex_aid == "A0000000620102".lower():
-            return "javacard.security"
-        if hex_aid == "A000000062010101".lower():
-            return "javacard.framework.service"
-
-        if hex_aid == "A0000000620201".lower():
-            return "javacardx.crypto"
-        if hex_aid == "A0000000620202".lower():
-            return "javacardx.biometry"
-        if hex_aid == "A0000000620203".lower():
-            return "javacardx.external"
-        if hex_aid == "A0000000620209".lower():
-            return "javacardx.apdu"
-
-        if hex_aid == "A000000062020801".lower():
-            return "javacardx.framework.util"
-        if hex_aid == "A00000006202080101".lower():
-            return "javacardx.framework.util.intx"
-        if hex_aid == "A000000062020802".lower():
-            return "javacardx.framework.math"
-        if hex_aid == "A000000062020803".lower():
-            return "javacardx.framework.tlv"
-        if hex_aid == "A000000062020804".lower():
-            return "javacardx.framework.string"
-
-        if hex_aid == "A00000015100".lower():
-            return "org.globalplatform"
-
-        return "unknown"
+        hex_aid = bytes(self.aid).hex().upper()
+        if hex_aid in AID_NAME_MAP:
+            return AID_NAME_MAP[hex_aid]
+        else:
+            return "unknown"
 
     def get_first_jcapi_version(self):
         hex_aid = bytes(self.aid).hex().upper()
@@ -262,28 +249,32 @@ def format_import(packages_list):
 
 
 def test():
+    javacardx_biometry1toN = PackageAID(b'\xA0\x00\x00\x00\x62\x02\x04', 1, 0)
     javacard_framework = PackageAID(b'\xA0\x00\x00\x00\x62\x01\x01', 1, 3)
     javacard_security = PackageAID(b'\xA0\x00\x00\x00\x62\x01\x02', 1, 3)
     javacardx_crypto = PackageAID(b'\xA0\x00\x00\x00\x62\x02\x01', 1, 3)
+    java_lang = PackageAID(b'\xA0\x00\x00\x00\x62\x00\x01', 1, 0)
     java_lang = PackageAID(b'\xA0\x00\x00\x00\x62\x00\x01', 1, 0)
     imported_packages = []
 
     imported_packages.append(java_lang)
     imported_packages.append(javacard_security)
     imported_packages.append(javacard_framework)
-    imported_packages.append(javacardx_crypto)
+    imported_packages.append(javacardx_biometry1toN)
 
     import_content = format_import(imported_packages)
-    check(import_content, javacardx_crypto, True)
+    check(import_content, javacardx_biometry1toN, True)
 
     supported = []
-    run_scan(TestCfg(1, 1, 0, 0, "A0000000620001"), supported)
-    save_scan(card_info, supported)
+    tested = {}
+    run_scan(TestCfg(1, 1, 0, 0, "a0000000620204"), supported, tested)
+    card_info = get_card_info("test")
+    save_scan(card_info, supported, tested)
 
 
 
 
-def test_aid(tested_package_aid, is_installed, supported_list):
+def test_aid(tested_package_aid, is_installed, supported_list, tested):
     imported_packages = []
     imported_packages.append(javacard_framework)
     # do not import java_lang as default (some cards will then fail to load)
@@ -295,10 +286,12 @@ def test_aid(tested_package_aid, is_installed, supported_list):
     if check(import_content, tested_package_aid, is_installed):
         print(" ###########\n  {0} IS SUPPORTED\n ###########\n".format(tested_package_aid.get_readable_string()))
         supported_list.append(tested_package_aid)
+        tested[tested_package_aid] = True
         is_installed = True
     else:
         print("   {0} v{1}.{2} is NOT supported ".format(tested_package_aid.get_aid_hex(), tested_package_aid.major,
                                                          tested_package_aid.minor))
+        tested[tested_package_aid] = False
         is_installed = False
 
     return is_installed
@@ -315,7 +308,7 @@ def print_supported(supported):
     print(" #################\n")
 
 
-def run_scan(cfg, supported):
+def run_scan(cfg, supported, tested):
     print("################# BEGIN ###########################\n")
     print(cfg)
     print("###################################################\n")
@@ -352,7 +345,7 @@ def run_scan(cfg, supported):
                         new_package_aid[6] = val_6
                         new_package = PackageAID(new_package_aid, major, minor)
 
-                        is_installed = test_aid(new_package, is_installed, supported)
+                        is_installed = test_aid(new_package, is_installed, supported, tested)
 
     print_supported(supported)
 
@@ -364,53 +357,53 @@ def run_scan(cfg, supported):
     print("#################################################\n")
 
 
-def scan_JC_API_305(card_info, supported):
+def scan_JC_API_305(card_info, supported, tested):
     MAX_MAJOR = 1
     #ADDITIONAL_MINOR = 1
     ADDITIONAL_MINOR = 1
     # maximal version (minor/major is always 1 higher than expected from given version of JC SDK)
     # If highest version is detected, additional inspection is necessary - suspicious (some cards ignore minor)
 
-    run_scan(TestCfg(1, MAX_MAJOR, 0, 0 + ADDITIONAL_MINOR, "A0000000620001"), supported)
-    save_scan(card_info, supported)
-    run_scan(TestCfg(1, MAX_MAJOR, 0, 0 + ADDITIONAL_MINOR, "A0000000620002"), supported)
-    save_scan(card_info, supported)
-    run_scan(TestCfg(1, MAX_MAJOR, 0, 0 + ADDITIONAL_MINOR, "A0000000620003"), supported)
-    save_scan(card_info, supported)
+    run_scan(TestCfg(1, MAX_MAJOR, 0, 0 + ADDITIONAL_MINOR, "A0000000620001"), supported, tested)
+    save_scan(card_info, supported, tested)
+    run_scan(TestCfg(1, MAX_MAJOR, 0, 0 + ADDITIONAL_MINOR, "A0000000620002"), supported, tested)
+    save_scan(card_info, supported, tested)
+    run_scan(TestCfg(1, MAX_MAJOR, 0, 0 + ADDITIONAL_MINOR, "A0000000620003"), supported, tested)
+    save_scan(card_info, supported, tested)
 
-    run_scan(TestCfg(1, MAX_MAJOR, 0, 6 + ADDITIONAL_MINOR, "A0000000620101"), supported)
-    save_scan(card_info, supported)
-    run_scan(TestCfg(1, MAX_MAJOR, 0, 0 + ADDITIONAL_MINOR, "A000000062010101"), supported)
-    save_scan(card_info, supported)
-    run_scan(TestCfg(1, MAX_MAJOR, 0, 6 + ADDITIONAL_MINOR, "A0000000620102"), supported)
-    save_scan(card_info, supported)
+    run_scan(TestCfg(1, MAX_MAJOR, 0, 6 + ADDITIONAL_MINOR, "A0000000620101"), supported, tested)
+    save_scan(card_info, supported, tested)
+    run_scan(TestCfg(1, MAX_MAJOR, 0, 0 + ADDITIONAL_MINOR, "A000000062010101"), supported, tested)
+    save_scan(card_info, supported, tested)
+    run_scan(TestCfg(1, MAX_MAJOR, 0, 6 + ADDITIONAL_MINOR, "A0000000620102"), supported, tested)
+    save_scan(card_info, supported, tested)
 
-    run_scan(TestCfg(1, MAX_MAJOR, 0, 6 + ADDITIONAL_MINOR, "A0000000620201"), supported)
-    save_scan(card_info, supported)
-    run_scan(TestCfg(1, MAX_MAJOR, 0, 3 + ADDITIONAL_MINOR, "A0000000620202"), supported)
-    save_scan(card_info, supported)
-    run_scan(TestCfg(1, MAX_MAJOR, 0, 0 + ADDITIONAL_MINOR, "A0000000620203"), supported)
-    save_scan(card_info, supported)
-    run_scan(TestCfg(1, MAX_MAJOR, 0, 0 + ADDITIONAL_MINOR, "A0000000620204"), supported)
-    save_scan(card_info, supported)
-    run_scan(TestCfg(1, MAX_MAJOR, 0, 0 + ADDITIONAL_MINOR, "A0000000620205"), supported)
-    save_scan(card_info, supported)
+    run_scan(TestCfg(1, MAX_MAJOR, 0, 6 + ADDITIONAL_MINOR, "A0000000620201"), supported, tested)
+    save_scan(card_info, supported, tested)
+    run_scan(TestCfg(1, MAX_MAJOR, 0, 3 + ADDITIONAL_MINOR, "A0000000620202"), supported, tested)
+    save_scan(card_info, supported, tested)
+    run_scan(TestCfg(1, MAX_MAJOR, 0, 0 + ADDITIONAL_MINOR, "A0000000620203"), supported, tested)
+    save_scan(card_info, supported, tested)
+    run_scan(TestCfg(1, MAX_MAJOR, 0, 0 + ADDITIONAL_MINOR, "A0000000620204"), supported, tested)
+    save_scan(card_info, supported, tested)
+    run_scan(TestCfg(1, MAX_MAJOR, 0, 0 + ADDITIONAL_MINOR, "A0000000620205"), supported, tested)
+    save_scan(card_info, supported, tested)
 
-    run_scan(TestCfg(1, MAX_MAJOR, 0, 1 + ADDITIONAL_MINOR, "A000000062020801"), supported)
-    save_scan(card_info, supported)
-    run_scan(TestCfg(1, MAX_MAJOR, 0, 0 + ADDITIONAL_MINOR, "A00000006202080101"), supported)
-    save_scan(card_info, supported)
-    run_scan(TestCfg(1, MAX_MAJOR, 0, 0 + ADDITIONAL_MINOR, "A000000062020802"), supported)
-    save_scan(card_info, supported)
-    run_scan(TestCfg(1, MAX_MAJOR, 0, 0 + ADDITIONAL_MINOR, "A000000062020803"), supported)
-    save_scan(card_info, supported)
-    run_scan(TestCfg(1, MAX_MAJOR, 0, 0 + ADDITIONAL_MINOR, "A000000062020804"), supported)
-    save_scan(card_info, supported)
+    run_scan(TestCfg(1, MAX_MAJOR, 0, 1 + ADDITIONAL_MINOR, "A000000062020801"), supported, tested)
+    save_scan(card_info, supported, tested)
+    run_scan(TestCfg(1, MAX_MAJOR, 0, 0 + ADDITIONAL_MINOR, "A00000006202080101"), supported, tested)
+    save_scan(card_info, supported, tested)
+    run_scan(TestCfg(1, MAX_MAJOR, 0, 0 + ADDITIONAL_MINOR, "A000000062020802"), supported, tested)
+    save_scan(card_info, supported, tested)
+    run_scan(TestCfg(1, MAX_MAJOR, 0, 0 + ADDITIONAL_MINOR, "A000000062020803"), supported, tested)
+    save_scan(card_info, supported, tested)
+    run_scan(TestCfg(1, MAX_MAJOR, 0, 0 + ADDITIONAL_MINOR, "A000000062020804"), supported, tested)
+    save_scan(card_info, supported, tested)
 
-    run_scan(TestCfg(1, MAX_MAJOR, 0, 0 + ADDITIONAL_MINOR, "A0000000620209"), supported)
-    save_scan(card_info, supported)
-    run_scan(TestCfg(1, MAX_MAJOR, 0, 0 + ADDITIONAL_MINOR, "A000000062020901"), supported)
-    save_scan(card_info, supported)
+    run_scan(TestCfg(1, MAX_MAJOR, 0, 0 + ADDITIONAL_MINOR, "A0000000620209"), supported, tested)
+    save_scan(card_info, supported, tested)
+    run_scan(TestCfg(1, MAX_MAJOR, 0, 0 + ADDITIONAL_MINOR, "A000000062020901"), supported, tested)
+    save_scan(card_info, supported, tested)
 
     print_supported(supported)
 
@@ -437,8 +430,9 @@ def get_card_info(card_name):
     return CardInfo(card_name, atr, cplc, result_text)
 
 
-def save_scan(card_info, supported):
-    file_name = "{0}_AIDSUPPORT_{1}.csv".format(card_info.card_name, card_info.atr)
+def save_scan(card_info, supported, tested):
+    card_name = card_info.card_name.replace(' ', '_')
+    file_name = "{0}_AIDSUPPORT_{1}.csv".format(card_name, card_info.atr)
     f = open('{0}\\{1}'.format(BASE_PATH, file_name), 'w')
 
     f.write("jcAIDScan version; {0}\n".format(SCRIPT_VERSION))
@@ -451,32 +445,12 @@ def save_scan(card_info, supported):
         f.write("{0}; {1}; {2}; {3}; {4}\n".format(aid.get_aid_hex(), aid.major, aid.minor, aid.get_well_known_name(),
                                                aid.get_first_jcapi_version()))
 
+    f.write("\n")
+    f.write("FULL PACKAGE AID; IS SUPPORTED?; PACKAGE NAME WITH VERSION; \n")
+    for aid in tested:
+        f.write("{0}; \t{1}; \t{2};\n".format(aid.serialize(), "yes" if tested[aid] else "no", aid.get_readable_string()))
+
     f.close()
-
-def scan_subpackages(supported):
-    # scan user-defined package
-    supported = []
-    #test1 = TestCfg(1, 1, 0, 1, 0x62, 0x62, 0, 1, 0, 1, PACKAGE_TEMPLATE)
-    test1 = TestCfg(1, 2, 0, 10, 0x62, 0x62, 0, 10, 0, 20, PACKAGE_TEMPLATE)
-    run_scan(test1, supported)
-    print_supported(supported)
-
-    # now check supported packages with appended 1 byte
-    is_installed = True
-    supported_01 = []
-
-    new_package_aid = []
-    for supported_aid in supported:
-        for val in range(0, 10):
-            new_package_aid[:] = supported_aid.aid
-            new_package_aid.append(val)
-            new_package = PackageAID(new_package_aid, supported_aid.major, supported_aid.minor)
-            is_installed = test_aid(new_package, is_installed, supported_01)
-
-    # print all results
-    print_supported(supported)
-    print_supported(supported_01)
-
 
 def prepare_for_testing():
     # restore default import section
@@ -503,12 +477,42 @@ def main():
     card_info = get_card_info("")
     # scan standard JC API
     supported = []
-    scan_JC_API_305(card_info, supported)
+    tested = {}
+    scan_JC_API_305(card_info, supported, tested)
     # create file with results
-    save_scan(card_info, supported)
+    save_scan(card_info, supported, tested)
 
     return
 
 if __name__ == "__main__":
-    #test()
+    # test()
     main()
+
+
+#
+# EXPERIMENTAL
+#
+
+def scan_subpackages(supported):
+    # scan user-defined package
+    supported = []
+    #test1 = TestCfg(1, 1, 0, 1, 0x62, 0x62, 0, 1, 0, 1, PACKAGE_TEMPLATE)
+    test1 = TestCfg(1, 2, 0, 10, 0x62, 0x62, 0, 10, 0, 20, PACKAGE_TEMPLATE)
+    run_scan(test1, supported)
+    print_supported(supported)
+
+    # now check supported packages with appended 1 byte
+    is_installed = True
+    supported_01 = []
+
+    new_package_aid = []
+    for supported_aid in supported:
+        for val in range(0, 10):
+            new_package_aid[:] = supported_aid.aid
+            new_package_aid.append(val)
+            new_package = PackageAID(new_package_aid, supported_aid.major, supported_aid.minor)
+            is_installed = test_aid(new_package, is_installed, supported_01)
+
+    # print all results
+    print_supported(supported)
+    print_supported(supported_01)
