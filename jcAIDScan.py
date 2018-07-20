@@ -8,7 +8,8 @@ import textwrap
 SCRIPT_VERSION = '0.1.1'
 BASE_PATH = '.'  # base path where script looks for templates an store output files
 
-FORCE_NO_SAFETY_CHECK = True # if True, no user prompt for authentication verification is performed. Leave this as False
+FORCE_UNINSTALL = True  # if true, test applet will be always attempted to be removed. Set to False for faster testing
+FORCE_NO_SAFETY_CHECK = False # if True, no user prompt for authentication verification is performed. Leave this as False
 
 GP_BASIC_COMMAND = 'gp.exe'  # command which will start GlobalPlatformPro binary
 GP_AUTH_FLAG = ''  # most of the card requires no additional authentication flag
