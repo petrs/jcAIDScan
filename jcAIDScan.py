@@ -3,13 +3,14 @@ import os
 import subprocess
 from shutil import copyfile
 import time
+import textwrap
 
 SCRIPT_VERSION = '0.1.1'
-BASE_PATH = '.'
+BASE_PATH = '.'  # base path where script looks for templates an store output files
 
-FORCE_UNINSTALL = True
+FORCE_NO_SAFETY_CHECK = True # if True, no user prompt for authentication verification is performed. Leave this as False
 
-GP_BASIC_COMMAND = 'gp.exe'
+GP_BASIC_COMMAND = 'gp.exe'  # command which will start GlobalPlatformPro binary
 GP_AUTH_FLAG = ''  # most of the card requires no additional authentication flag
 # GP_AUTH_FLAG = '--emv'  # use of EMV key diversification is used (e.g., G&D cards)
 
@@ -258,8 +259,7 @@ def format_import(packages_list):
 def test_aid(tested_package_aid, is_installed, supported_list, tested_list):
     imported_packages = []
     imported_packages.append(javacard_framework)
-    # do not import java_lang as default (some cards will then fail to load)
-    #imported_packages.append(java_lang)
+    #imported_packages.append(java_lang)  # do not import java_lang as default (some cards will then fail to load)
     imported_packages.append(tested_package_aid)
 
     import_content = format_import(imported_packages)
@@ -338,19 +338,20 @@ def run_scan(cfg, supported, tested):
 
     print_supported(supported)
 
-    print("Elapsed time: {0:0.2f}s, {1:0.2f} AIDs / min\n".format(elapsed, num_tests / (elapsed / 60)))
+    print("Elapsed time: {0:0.2f}s\nTesting speed: {1:0.2f} AIDs / min\n".format(elapsed, num_tests / (elapsed / 60)))
 
     print("################# END ###########################\n")
     print(cfg)
     print("#################################################\n")
 
 
-def scan_JC_API_305(card_info, supported, tested):
+def scan_jc_api_305(card_info, supported, tested):
     MAX_MAJOR = 1
-    #ADDITIONAL_MINOR = 1
     ADDITIONAL_MINOR = 1
-    # maximal version (minor/major is always 1 higher than expected from given version of JC SDK)
-    # If highest version is detected, additional inspection is necessary - suspicious (some cards ignore minor)
+    # minor is tested with ADDITIONAL_MINOR additional values higher than expected from the given version of JC SDK).
+    # If highest version is detected, additional inspection is necessary - suspicious (some cards ignore minor version)
+
+    # intermediate results are saved after every tested package to preserve info even in case of card error
 
     run_scan(TestCfg(1, MAX_MAJOR, 0, 0 + ADDITIONAL_MINOR, "A0000000620001"), supported, tested)
     save_scan(card_info, supported, tested)
@@ -450,24 +451,65 @@ def prepare_for_testing():
     f.write(bytes.fromhex(import_section))
     f.close()
 
-
-# if aid supported, try also aid + 01 and aid + 01 01
-def main():
-    # uninstall any previous installation
+    # uninstall any previous installation of applet
     result = subprocess.run([GP_BASIC_COMMAND, GP_AUTH_FLAG, '--uninstall', 'test.cap'], stdout=subprocess.PIPE)
     result_text = result.stdout.decode("utf-8")
     is_installed = False
 
-    # restore template to good known state
+
+def verify_gp_authentication():
+    # Try to list applets on card then prompt user for confirmation
+    info = "IMPORTANT: Supported package scanning will execute large number of OpenPlatform SCP " \
+                        "authentications. If your GlobalPlatformPro tool is not setup properly and fails to " \
+                        "authenticate, your card may be permanently blocked. This script will now execute one " \
+                        "authentication to list installed applets. Check if everything is correct. If you will see " \
+                        "any authentication error, do NOT continue. Also, do not remove your card from reader during "\
+                        "the whole scanning process."
+    print(textwrap.fill(info, 80))
+
+    input("\nPress enter to continue...")
+    print("Going to list applets, please wait...")
+
+    result = subprocess.run([GP_BASIC_COMMAND, GP_AUTH_FLAG, '--list', '--d'], stdout=subprocess.PIPE)
+    result_text = result.stdout.decode("utf-8")
+    print(result_text)
+
+    auth_result = input("Were applets listed with no error? (yes/no): ")
+    if auth_result == "yes":
+        return True
+    else :
+        return False
+
+
+def print_info():
+    print("jcAIDScan v{0} tool for scanning supported JavaCard packages.\nCheck https://github.com/petrs/jcAIDScan/ "
+          "for the newest version and documentation.\n2018, Petr Svenda\n".format(SCRIPT_VERSION))
+
+    info = "WARNING: this is a research tool and expects that you understand what you are doing. Your card may be " \
+           "permanently blocked in case of incorrect use."
+
+    print(textwrap.fill(info, 80))
+
+
+def main():
+    print_info()
+
+    # verify gp tool configuration + user prompt
+    if not FORCE_NO_SAFETY_CHECK:
+        if not verify_gp_authentication():
+            return
+
+    # restore template to good known state, uninstall applet etc.
     prepare_for_testing()
 
     # obtain card basic info
     card_info = get_card_info("")
+
     # scan standard JC API
     supported = []
     tested = {}
     elapsed = -time.perf_counter()
-    scan_JC_API_305(card_info, supported, tested)
+    scan_jc_api_305(card_info, supported, tested)
     elapsed += time.perf_counter()
     print("Complete test elapsed time: {0:0.2f}s\n".format(elapsed))
     # create file with results
@@ -476,14 +518,12 @@ def main():
     return
 
 if __name__ == "__main__":
-    # test()
     main()
 
 
 #
 # EXPERIMENTAL
 #
-
 def scan_subpackages(supported):
     # scan user-defined package
     supported = []
