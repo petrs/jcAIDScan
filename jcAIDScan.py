@@ -119,56 +119,35 @@ class TestCfg:
     max_major = 1
     min_minor = 0
     max_minor = 1
-    min4 = 0x62
-    max4 = 0x62
-    min5 = 0
-    max5 = 2
-    min6 = 0
-    max6 = 2
+    modified_ranges = []
     package_template = ""
     package_template_bytes = []
 
-    def __init__(self, package_template, min_major, max_major, min_minor, max_minor, min4 = -1, max4 = -1, min5 = -1, max5 = -1,
-                 min6 = -1, max6 = -1):
+    def __init__(self, package_template, min_major, max_major, min_minor, max_minor, modified_range=None):
         self.min_major = min_major
         self.max_major = max_major
         self.min_minor = min_minor
         self.max_minor = max_minor
-        self.min4 = min4
-        self.max4 = max4
-        self.min5 = min5
-        self.max5 = max5
-        self.min6 = min6
-        self.max6 = max6
+        self.modified_ranges = modified_range
         self.package_template = package_template
         self.package_template_bytes = bytearray(bytes.fromhex(package_template))
 
     def __repr__(self):
-        return 'MAJOR=[{0}-{1}], MINOR=[{2}-{3}], 4TH=[{4}-{5}], 5TH=[{6}-{7}], 6TH=[{8}-{9}], TEMPLATE={10}'.format(
-            self.min_major, self.max_major, self.min_minor, self.max_minor, self.min4, self.max4, self.min5, self.max5,
-            self.min6, self.max6, self.package_template)
+        modifiers_str = ""
+        if self.modified_ranges:
+            modifiers_str = ''.join('[{0}]=[{1:02X}-{2:02X}] '.format(a[0], a[1], a[2]) for a in self.modified_ranges)
+        return 'MAJOR=[{0}-{1}], MINOR=[{2}-{3}], {4}, TEMPLATE={5}'.format(
+            self.min_major, self.max_major, self.min_minor, self.max_minor, modifiers_str, self.package_template)
 
     @staticmethod
-    def get_range(min_val, max_val, template_val):
-        if min_val == -1:
-            start = template_val
-        else:
-            start = min_val
-        if max_val == -1:
-            stop = template_val
-        else:
-            stop = max_val
+    def get_val_range(offset, modified_ranges, template_value):
+        if modified_ranges:
+            for range_modif in modified_ranges:
+                if range_modif[0] == offset:
+                    return range_modif[1], range_modif[2]
 
-        return start, stop
-
-    def get_val4_range(self):
-        return self.get_range(self.min4, self.max4, self.package_template_bytes[4])
-
-    def get_val5_range(self):
-        return self.get_range(self.min5, self.max5, self.package_template_bytes[5])
-
-    def get_val6_range(self):
-        return self.get_range(self.min6, self.max6, self.package_template_bytes[6])
+        # if no special range modifier found, then return byte from template
+        return template_value, template_value
 
 
 class CardInfo:
@@ -197,6 +176,8 @@ class AIDScanner:
     gp_basic_command = GP_BASIC_COMMAND # command which will start GlobalPlatformPro binary
     gp_auth_flag = GP_AUTH_FLAG # most of the card requires no additional authentication flag, some requires '--emv'
     card_name = ""
+    is_installed = True # if true, test applet is installed and will  be removed
+    num_tests = 0 # number of executed tests (for performance measurements)
 
     def check_aid(self, import_section, package, uninstall):
         # save content of Import.cap into directory structure
@@ -250,7 +231,7 @@ class AIDScanner:
 
         return import_section
 
-    def test_aid(self, tested_package_aid, is_installed, supported_list, tested_list):
+    def test_aid(self, tested_package_aid, supported_list, tested_list):
         imported_packages = []
         imported_packages.append(javacard_framework)
         #imported_packages.append(java_lang)  # do not import java_lang as default (some cards will then fail to load)
@@ -258,18 +239,18 @@ class AIDScanner:
 
         import_content = self.format_import(imported_packages)
 
-        if self.check_aid(import_content, tested_package_aid, is_installed):
+        if self.check_aid(import_content, tested_package_aid, self.is_installed):
             print(" ###########\n  {0} IS SUPPORTED\n ###########\n".format(tested_package_aid.get_readable_string()))
             supported_list.append(tested_package_aid)
             tested_list[tested_package_aid] = True
-            is_installed = True
+            self.is_installed = True
         else:
             print("   {0} v{1}.{2} is NOT supported ".format(tested_package_aid.get_aid_hex(), tested_package_aid.major,
                                                              tested_package_aid.minor))
             tested_list[tested_package_aid] = False
-            is_installed = False
+            self.is_installed = False
 
-        return is_installed
+        return self.is_installed
 
     def print_supported(self, supported):
         print(" #################\n")
@@ -281,6 +262,38 @@ class AIDScanner:
             print("No items")
         print(" #################\n")
 
+    def run_scan_recursive(self, modified_ranges_list, package_aid, major, minor, supported, tested):
+        # recursive stop
+        if len(modified_ranges_list) == 0:
+            return
+
+        # make local copy of modifiers list except first item
+        local_modified_ranges_list = []
+        local_modified_ranges_list[:] = modified_ranges_list[1:]
+
+        # process first range and call recursively for the rest
+        current_range = modified_ranges_list[0]
+        offset = current_range[0]
+        # compute actual range based on provided values
+        start = current_range[1]
+        stop = current_range[2]
+
+        local_package_aid = bytearray(len(package_aid))
+        local_package_aid[:] = package_aid
+        for value in range(start, stop + 1):
+            local_package_aid[offset] = value
+
+            # check if already applied all modifiers
+            if len(local_modified_ranges_list) == 0:
+                #  if yes, then check prepared AID
+                new_package = PackageAID(local_package_aid, major, minor)
+                # test current package
+                self.test_aid(new_package, supported, tested)
+                self.num_tests += 1
+            else:
+                # if no, run additional recursion
+                self.run_scan_recursive(local_modified_ranges_list, local_package_aid, major, minor, supported, tested)
+
     def run_scan(self, cfg, supported, tested):
         print("################# BEGIN ###########################\n")
         print(cfg)
@@ -291,9 +304,9 @@ class AIDScanner:
 
         # start performance measurements
         elapsed = -time.perf_counter()
-        num_tests = 0
+        self.num_tests = 0
 
-        is_installed = True # assume that test applet was installed to call uninstall
+        self.is_installed = True  # assume that test applet was installed to call uninstall
 
         # check all possible values from specified ranges
         for major in range(cfg.min_major, cfg.max_major + 1):
@@ -304,33 +317,24 @@ class AIDScanner:
                 self.print_supported(supported)
                 print("###########################:#################\n")
                 print("MAJOR = {0:02X}, MINOR = {1:02X}".format(major, minor))
-                # compute start and end of required range
-                [start4, stop4] = cfg.get_val4_range()
-                for val_4 in range(start4, stop4 + 1):
-                    self.print_supported(supported)
-                    print("############################################\n")
-                    print("MAJOR = {0:02X}, MINOR = {1:02X}, VAL4 = {2:02X}".format(major, minor, val_4))
-                    # compute start and end of required range
-                    [start5, stop5] = cfg.get_val5_range()
-                    for val_5 in range(start5, stop5 + 1):
-                        # compute start and end of required range
-                        [start6, stop6] = cfg.get_val6_range()
-                        for val_6 in range(start6, stop6 + 1):
-                            new_package_aid = bytearray(bytes.fromhex(cfg.package_template))
-                            new_package_aid[4] = val_4
-                            new_package_aid[5] = val_5
-                            new_package_aid[6] = val_6
-                            new_package = PackageAID(new_package_aid, major, minor)
-                            # test current package
-                            is_installed = self.test_aid(new_package, is_installed, supported, tested)
-                            num_tests += 1
+
+                # Now recursively iterate via specified ranges (if provided)
+                new_package_aid = bytearray(bytes.fromhex(cfg.package_template))
+                if cfg.modified_ranges:
+                    self.run_scan_recursive(cfg.modified_ranges, new_package_aid, major, minor, supported, tested)
+                else:
+                    # nor modification ranges, just test package with current combination of major and minor version
+                    new_package = PackageAID(new_package_aid, major, minor)
+                    # test current package
+                    self.test_aid(new_package, supported, tested)
+                    self.num_tests += 1
 
         # end performance measurements
         elapsed += time.perf_counter()
 
         self.print_supported(supported)
 
-        print("Elapsed time: {0:0.2f}s\nTesting speed: {1:0.2f} AIDs / min\n".format(elapsed, num_tests / (elapsed / 60)))
+        print("Elapsed time: {0:0.2f}s\nTesting speed: {1:0.2f} AIDs / min\n".format(elapsed, self.num_tests / (elapsed / 60)))
 
         print("################# END ###########################\n")
         print(cfg)
@@ -444,7 +448,7 @@ class AIDScanner:
         # uninstall any previous installation of applet
         result = subprocess.run([self.gp_basic_command, self.gp_auth_flag, '--uninstall', 'test.cap'], stdout=subprocess.PIPE)
         result_text = result.stdout.decode("utf-8")
-        is_installed = False
+        self.is_installed = False
 
     def verify_gp_authentication(self):
         # Try to list applets on card then prompt user for confirmation
@@ -504,7 +508,6 @@ class AIDScanner:
 def main():
     app = AIDScanner()
     app.scan_jc_api_305_complete()
-
 
 if __name__ == "__main__":
     main()
