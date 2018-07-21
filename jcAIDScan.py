@@ -294,6 +294,10 @@ class AIDScanner:
                 # if no, run additional recursion
                 self.run_scan_recursive(local_modified_ranges_list, local_package_aid, major, minor, supported, tested)
 
+        # print supported after iterating whole range
+        self.print_supported(supported)
+
+
     def run_scan(self, cfg, supported, tested):
         print("################# BEGIN ###########################\n")
         print(cfg)
@@ -309,6 +313,7 @@ class AIDScanner:
         self.is_installed = True  # assume that test applet was installed to call uninstall
 
         # check all possible values from specified ranges
+        new_package_aid = bytearray(bytes.fromhex(cfg.package_template))
         for major in range(cfg.min_major, cfg.max_major + 1):
             self.print_supported(supported)
             print("############################################\n")
@@ -319,7 +324,6 @@ class AIDScanner:
                 print("MAJOR = {0:02X}, MINOR = {1:02X}".format(major, minor))
 
                 # Now recursively iterate via specified ranges (if provided)
-                new_package_aid = bytearray(bytes.fromhex(cfg.package_template))
                 if cfg.modified_ranges:
                     self.run_scan_recursive(cfg.modified_ranges, new_package_aid, major, minor, supported, tested)
                 else:
