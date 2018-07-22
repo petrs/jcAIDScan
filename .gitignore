@@ -1,4 +1,6 @@
+ignore/*
 results/*
+__pycache__/*
 
 # Compiled class file
 *.class
