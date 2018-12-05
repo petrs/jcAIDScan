@@ -212,7 +212,7 @@ class AIDScanner:
 
         # heuristics to detect successful installation - log must contain error code 0x9000 followed by SCardEndTransaction
         # If installation fails, different error code is present
-        if result.find('9000\r\nSCardEndTransaction()') != -1:
+        if result.find('9000\r\nSCardEndTransaction(') != -1:
             return True
         else:
             return False
@@ -252,8 +252,14 @@ class AIDScanner:
 
         return self.is_installed
 
-    def print_supported(self, supported):
+    def print_supported(self, supported, supported_caps):
         print(" #################\n")
+        if supported_caps:
+            if len(supported_caps) > 0:
+                for convertor_version in supported_caps:
+                    if supported_caps[convertor_version]:
+                        print("{0} convertor version supported\n".format(convertor_version))
+
         if len(supported) > 0:
             for supported_aid in supported:
                 print("{0} (since JC API {1})\n".format(supported_aid.get_readable_string(),
@@ -295,7 +301,7 @@ class AIDScanner:
                 self.run_scan_recursive(local_modified_ranges_list, local_package_aid, major, minor, supported, tested)
 
         # print supported after iterating whole range
-        self.print_supported(supported)
+        self.print_supported(supported, None)
 
 
     def run_scan(self, cfg, supported, tested):
@@ -315,11 +321,11 @@ class AIDScanner:
         # check all possible values from specified ranges
         new_package_aid = bytearray(bytes.fromhex(cfg.package_template))
         for major in range(cfg.min_major, cfg.max_major + 1):
-            self.print_supported(supported)
+            self.print_supported(supported, None)
             print("############################################\n")
             print("MAJOR = {0:02X}".format(major))
             for minor in range(cfg.min_minor, cfg.max_minor + 1):
-                self.print_supported(supported)
+                self.print_supported(supported, None)
                 print("###########################:#################\n")
                 print("MAJOR = {0:02X}, MINOR = {1:02X}".format(major, minor))
 
@@ -336,7 +342,7 @@ class AIDScanner:
         # end performance measurements
         elapsed += time.perf_counter()
 
-        self.print_supported(supported)
+        self.print_supported(supported, None)
 
         print("Elapsed time: {0:0.2f}s\nTesting speed: {1:0.2f} AIDs / min\n".format(elapsed, self.num_tests / (elapsed / 60)))
 
@@ -344,7 +350,7 @@ class AIDScanner:
         print(cfg)
         print("#################################################\n")
 
-    def scan_jc_api_305(self, card_info, supported, tested):
+    def scan_jc_api_305(self, card_info, supported_caps, supported, tested):
         MAX_MAJOR = 1
         ADDITIONAL_MINOR = 1
         # minor is tested with ADDITIONAL_MINOR additional values higher than expected from the given version of JC SDK).
@@ -353,47 +359,74 @@ class AIDScanner:
         # intermediate results are saved after every tested package to preserve info even in case of card error
 
         self.run_scan(TestCfg("A0000000620001", 1, MAX_MAJOR, 0, 0 + ADDITIONAL_MINOR), supported, tested)
-        self.save_scan(card_info, supported, tested)
+        self.save_scan(card_info, supported_caps, supported, tested)
         self.run_scan(TestCfg("A0000000620002", 1, MAX_MAJOR, 0, 0 + ADDITIONAL_MINOR), supported, tested)
-        self.save_scan(card_info, supported, tested)
+        self.save_scan(card_info, supported_caps, supported, tested)
         self.run_scan(TestCfg("A0000000620003", 1, MAX_MAJOR, 0, 0 + ADDITIONAL_MINOR), supported, tested)
-        self.save_scan(card_info, supported, tested)
+        self.save_scan(card_info, supported_caps, supported, tested)
 
         self.run_scan(TestCfg("A0000000620101", 1, MAX_MAJOR, 0, 6 + ADDITIONAL_MINOR), supported, tested)
-        self.save_scan(card_info, supported, tested)
+        self.save_scan(card_info, supported_caps, supported, tested)
         self.run_scan(TestCfg("A000000062010101", 1, MAX_MAJOR, 0, 0 + ADDITIONAL_MINOR), supported, tested)
-        self.save_scan(card_info, supported, tested)
+        self.save_scan(card_info, supported_caps, supported, tested)
         self.run_scan(TestCfg("A0000000620102", 1, MAX_MAJOR, 0, 6 + ADDITIONAL_MINOR), supported, tested)
-        self.save_scan(card_info, supported, tested)
+        self.save_scan(card_info, supported_caps, supported, tested)
 
         self.run_scan(TestCfg("A0000000620201", 1, MAX_MAJOR, 0, 6 + ADDITIONAL_MINOR), supported, tested)
-        self.save_scan(card_info, supported, tested)
+        self.save_scan(card_info, supported_caps, supported, tested)
         self.run_scan(TestCfg("A0000000620202", 1, MAX_MAJOR, 0, 3 + ADDITIONAL_MINOR), supported, tested)
-        self.save_scan(card_info, supported, tested)
+        self.save_scan(card_info, supported_caps, supported, tested)
+
         self.run_scan(TestCfg("A0000000620203", 1, MAX_MAJOR, 0, 0 + ADDITIONAL_MINOR), supported, tested)
-        self.save_scan(card_info, supported, tested)
+        self.save_scan(card_info, supported_caps, supported, tested)
         self.run_scan(TestCfg("A0000000620204", 1, MAX_MAJOR, 0, 0 + ADDITIONAL_MINOR), supported, tested)
-        self.save_scan(card_info, supported, tested)
+        self.save_scan(card_info, supported_caps, supported, tested)
         self.run_scan(TestCfg("A0000000620205", 1, MAX_MAJOR, 0, 0 + ADDITIONAL_MINOR), supported, tested)
-        self.save_scan(card_info, supported, tested)
+        self.save_scan(card_info, supported_caps, supported, tested)
 
         self.run_scan(TestCfg("A000000062020801", 1, MAX_MAJOR, 0, 1 + ADDITIONAL_MINOR), supported, tested)
-        self.save_scan(card_info, supported, tested)
+        self.save_scan(card_info, supported_caps, supported, tested)
         self.run_scan(TestCfg("A00000006202080101", 1, MAX_MAJOR, 0, 0 + ADDITIONAL_MINOR), supported, tested)
-        self.save_scan(card_info, supported, tested)
+        self.save_scan(card_info, supported_caps, supported, tested)
         self.run_scan(TestCfg("A000000062020802", 1, MAX_MAJOR, 0, 0 + ADDITIONAL_MINOR), supported, tested)
-        self.save_scan(card_info, supported, tested)
+        self.save_scan(card_info, supported_caps, supported, tested)
+
         self.run_scan(TestCfg("A000000062020803", 1, MAX_MAJOR, 0, 0 + ADDITIONAL_MINOR), supported, tested)
-        self.save_scan(card_info, supported, tested)
+        self.save_scan(card_info, supported_caps, supported, tested)
         self.run_scan(TestCfg("A000000062020804", 1, MAX_MAJOR, 0, 0 + ADDITIONAL_MINOR), supported, tested)
-        self.save_scan(card_info, supported, tested)
+        self.save_scan(card_info, supported_caps, supported, tested)
 
         self.run_scan(TestCfg("A0000000620209", 1, MAX_MAJOR, 0, 0 + ADDITIONAL_MINOR), supported, tested)
-        self.save_scan(card_info, supported, tested)
+        self.save_scan(card_info, supported_caps, supported, tested)
         self.run_scan(TestCfg("A000000062020901", 1, MAX_MAJOR, 0, 0 + ADDITIONAL_MINOR), supported, tested)
-        self.save_scan(card_info, supported, tested)
+        self.save_scan(card_info, supported_caps, supported, tested)
 
-        self.print_supported(supported)
+        self.print_supported(supported, supported_caps)
+
+    def test_upload_cap(self, cap_name, cap_version, supported_caps):
+        print(" Going to upload cap file '" + cap_name + "' (JC API " + cap_version + ") ... ")
+        # try to install test applet
+        subprocess.run([self.gp_basic_command, self.gp_auth_flag, '--uninstall', cap_name], stdout=subprocess.PIPE)
+        result = subprocess.run([self.gp_basic_command, self.gp_auth_flag, '--install', cap_name, '--d'], stdout=subprocess.PIPE)
+        result = result.stdout.decode("utf-8")
+        # heuristics to detect successful installation - log must contain error code 0x9000 followed by SCardEndTransaction
+        # If installation fails, different error code is present
+        if result.find('9000\r\nSCardEndTransaction(') != -1:
+            print("OK\n")
+            supported_caps[cap_version] = True
+        else:
+            print("FAIL\n")
+            supported_caps[cap_version] = False
+
+    def test_upload_caps(self, supported_caps):
+        print("################# END ###########################\n")
+        self.test_upload_cap('test_211.cap', '2.1.1', supported_caps)
+        self.test_upload_cap('test_220.cap', '2.2.0', supported_caps)
+        self.test_upload_cap('test_221.cap', '2.2.1', supported_caps)
+        self.test_upload_cap('test_222.cap', '2.2.2', supported_caps)
+        self.test_upload_cap('test_301.cap', '3.0.1', supported_caps)
+        self.test_upload_cap('test_304.cap', '3.0.4', supported_caps)
+        self.test_upload_cap('test_305.cap', '3.0.5', supported_caps)
 
     def get_card_info(self, card_name):
         if card_name == "":
@@ -416,7 +449,7 @@ class AIDScanner:
 
         return CardInfo(card_name, atr, cplc, result_text)
 
-    def save_scan(self, card_info, supported, tested):
+    def save_scan(self, card_info, supported_cap_versions, supported, tested):
         card_name = card_info.card_name.replace(' ', '_')
         file_name = "{0}_AIDSUPPORT_{1}.csv".format(card_name, card_info.atr)
         f = open('{0}\\{1}'.format(self.base_path, file_name), 'w')
@@ -436,6 +469,12 @@ class AIDScanner:
             f.write("FULL PACKAGE AID; IS SUPPORTED?; PACKAGE NAME WITH VERSION; \n")
             for aid in tested:
                 f.write("{0}; \t{1}; \t{2};\n".format(aid.serialize(), "yes" if tested[aid] else "no", aid.get_readable_string()))
+
+        if supported_cap_versions:
+            f.write("\n")
+            f.write("JC CONVERTOR VERSION; CAP SUCCESSFULLY UPLOADED?;;\n")
+            for version in supported_cap_versions:
+                f.write("{0}; {1};\n".format(version, "yes" if supported_cap_versions[version] else "no"))
 
         f.close()
 
@@ -474,7 +513,7 @@ class AIDScanner:
         auth_result = input("Were applets listed with no error? (yes/no): ")
         if auth_result == "yes":
             return True
-        else :
+        else:
             return False
 
     def print_info(self):
@@ -498,15 +537,19 @@ class AIDScanner:
         # obtain card basic info
         card_info = self.get_card_info(self.card_name)
 
+        # try to upload cap files converted with different version of JC convertor
+        supported_caps = {}
+        self.test_upload_caps(supported_caps)
+
         # scan standard JC API
         supported = []
         tested = {}
         elapsed = -time.perf_counter()
-        self.scan_jc_api_305(card_info, supported, tested)
+        self.scan_jc_api_305(card_info, supported_caps, supported, tested)
         elapsed += time.perf_counter()
         print("Complete test elapsed time: {0:0.2f}s\n".format(elapsed))
         # create file with results
-        self.save_scan(card_info, supported, tested)
+        self.save_scan(card_info, supported_caps, supported, tested)
 
 
 def main():
