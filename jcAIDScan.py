@@ -1,7 +1,9 @@
+#!/usr/bin/env python
 import shutil
 import os
 import subprocess
 from shutil import copyfile
+from os import path
 import time
 import textwrap
 
@@ -182,12 +184,12 @@ class AIDScanner:
     def check_aid(self, import_section, package, uninstall):
         # save content of Import.cap into directory structure
         print(import_section)
-        f = open('{0}\\template\\test\\javacard\\Import.cap'.format(self.base_path), 'wb')
+        f = open(path.join(self.base_path, 'template', 'test', 'javacard', 'Import.cap'), 'wb')
         f.write(bytes.fromhex(import_section))
         f.close()
 
         # create new cap file by zip of directories
-        shutil.make_archive('test.cap', 'zip', '{0}\\template\\'.format(self.base_path))
+        shutil.make_archive('test.cap', 'zip', path.join(self.base_path,'template'))
 
         package_hex = package.serialize()
 
@@ -195,7 +197,7 @@ class AIDScanner:
         os.remove('test.cap')
         os.rename('test.cap.zip', 'test.cap')
         # store used cap file
-        copyfile('test.cap', '{0}\\results\\test_{1}.cap'.format(self.base_path, package_hex))
+        copyfile('test.cap', path.join(self.base_path, 'results', 'test_{0}.cap'.format(package_hex)))
 
         # (try to) uninstall previous applet if necessary/required
         if uninstall or self.force_uninstall:
@@ -206,7 +208,7 @@ class AIDScanner:
 
         # store gp result into log file
         result = result.stdout.decode("utf-8")
-        f = open('{0}\\results\\{1}.txt'.format(self.base_path, package_hex), 'w')
+        f = open(path.join(self.base_path, 'results', '{0}.txt'.format(package_hex)), 'w')
         f.write(result)
         f.close()
 
@@ -452,7 +454,7 @@ class AIDScanner:
     def save_scan(self, card_info, supported_cap_versions, supported, tested):
         card_name = card_info.card_name.replace(' ', '_')
         file_name = "{0}_AIDSUPPORT_{1}.csv".format(card_name, card_info.atr)
-        f = open('{0}\\{1}'.format(self.base_path, file_name), 'w')
+        f = open(path.join(self.base_path, file_name), 'w')
 
         f.write("jcAIDScan version; {0}\n".format(SCRIPT_VERSION))
         f.write("Card ATR; {0}\n".format(card_info.atr))
@@ -484,7 +486,7 @@ class AIDScanner:
         imported_packages.append(javacard_framework)
         imported_packages.append(java_lang)
         import_section = self.format_import(imported_packages)
-        f = open('{0}\\template\\test\\javacard\\Import.cap'.format(self.base_path), 'wb')
+        f = open(path.join(self.base_path, 'template', 'test', 'javacard', 'Import.cap'), 'wb')
         f.write(bytes.fromhex(import_section))
         f.close()
 
