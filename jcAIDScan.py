@@ -6,7 +6,7 @@ import time
 import textwrap
 
 # defaults
-SCRIPT_VERSION = '0.1.1'
+SCRIPT_VERSION = '0.1.2'
 BASE_PATH = '.'  # base path where script looks for templates an store output files
 
 FORCE_UNINSTALL = True  # if true, test applet will be always attempted to be removed. Set to False for faster testing
