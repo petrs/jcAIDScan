@@ -550,6 +550,10 @@ class AIDScanner:
         # obtain card basic info
         card_info = self.get_card_info(self.card_name)
 
+        # create folder for results, if doesn't exist
+        if not os.path.exists('./results/'):
+            os.mkdir('./results/', 0o755)
+
         # try to upload cap files converted with different version of JC convertor
         supported_caps = {}
         self.test_upload_caps(supported_caps)
