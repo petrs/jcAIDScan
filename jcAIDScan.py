@@ -204,7 +204,8 @@ class AIDScanner:
         package_hex = package.serialize()
 
         # remove zip suffix
-        os.remove('test.cap')
+        if os.path.exists('test.cap'):
+            os.remove('test.cap')
         os.rename('test.cap.zip', 'test.cap')
         # store used cap file
         copyfile('test.cap', path.join(self.base_path, 'results', 'test_{0}.cap'.format(package_hex)))
