@@ -21,6 +21,8 @@ GP_BASIC_COMMAND = ['gp.exe'] if SYSTEM == 'Windows' else ['java', '-jar', 'gp.j
 GP_AUTH_FLAG = []  # most of the card requires no additional authentication flag
 # GP_AUTH_FLAG = '--emv'  # use of EMV key diversification is used (e.g., G&D cards)
 
+SUCCESS_RESPONSE_HEURISTICS = '9000\r\nSCardEndTransaction(' if SYSTEM == 'Windows' else '9000\nSCardEndTransaction('
+
 AID_VERSION_MAP = {"000107A0000000620001": "2.1",  # java.lang
                    "000107A0000000620002": "2.2.0",  # java.io
                    "000107A0000000620003": "2.2.0",  # java.rmi
@@ -183,6 +185,8 @@ class AIDScanner:
     gp_uninstall_command = GP_BASIC_COMMAND + GP_AUTH_FLAG + ['--uninstall']  # command starting installation of applet
     gp_install_command = GP_BASIC_COMMAND + GP_AUTH_FLAG + ['-install']  # command starting uninstall of applet
 
+    success_response_heuristics = SUCCESS_RESPONSE_HEURISTICS
+
     card_name = ""
     is_installed = True # if true, test applet is installed and will  be removed
     num_tests = 0 # number of executed tests (for performance measurements)
@@ -220,7 +224,7 @@ class AIDScanner:
 
         # heuristics to detect successful installation - log must contain error code 0x9000 followed by SCardEndTransaction
         # If installation fails, different error code is present
-        if result.find('9000\r\nSCardEndTransaction(') != -1:
+        if result.find(self.success_response_heuristics) != -1:
             return True
         else:
             return False
@@ -419,7 +423,7 @@ class AIDScanner:
         result = result.stdout.decode("utf-8")
         # heuristics to detect successful installation - log must contain error code 0x9000 followed by SCardEndTransaction
         # If installation fails, different error code is present
-        if result.find('9000\r\nSCardEndTransaction(') != -1:
+        if result.find(self.success_response_heuristics) != -1:
             print("OK\n")
             supported_caps[cap_version] = True
         else:
