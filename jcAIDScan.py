@@ -183,7 +183,7 @@ class AIDScanner:
     gp_basic_command = GP_BASIC_COMMAND  # command which will start GlobalPlatformPro binary
     gp_auth_flag = GP_AUTH_FLAG  # most of the card requires no additional authentication flag, some requires '--emv'
     gp_uninstall_command = GP_BASIC_COMMAND + GP_AUTH_FLAG + ['--uninstall']  # command starting installation of applet
-    gp_install_command = GP_BASIC_COMMAND + GP_AUTH_FLAG + ['-install']  # command starting uninstall of applet
+    gp_install_command = GP_BASIC_COMMAND + GP_AUTH_FLAG + ['--install']  # command starting uninstall of applet
 
     success_response_heuristics = SUCCESS_RESPONSE_HEURISTICS
 
