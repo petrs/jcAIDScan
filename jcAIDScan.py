@@ -4,8 +4,10 @@ import os
 import subprocess
 from shutil import copyfile
 from os import path
+from platform import system
 import time
 import textwrap
+
 
 # defaults
 SCRIPT_VERSION = '0.1.2'
@@ -14,9 +16,12 @@ BASE_PATH = '.'  # base path where script looks for templates an store output fi
 FORCE_UNINSTALL = True  # if true, test applet will be always attempted to be removed. Set to False for faster testing
 FORCE_NO_SAFETY_CHECK = False # if True, no user prompt for authentication verification is performed. Leave this as False
 
-GP_BASIC_COMMAND = 'gp.exe'  # command which will start GlobalPlatformPro binary
-GP_AUTH_FLAG = ''  # most of the card requires no additional authentication flag
+SYSTEM = system()  # detect system platform, will be used for running GlobalPlatformPro binary and also for determining success responses
+GP_BASIC_COMMAND = ['gp.exe'] if SYSTEM == 'Windows' else ['java', '-jar', 'gp.jar']  # command which will start GlobalPlatformPro binary
+GP_AUTH_FLAG = []  # most of the card requires no additional authentication flag
 # GP_AUTH_FLAG = '--emv'  # use of EMV key diversification is used (e.g., G&D cards)
+
+SUCCESS_RESPONSE_HEURISTICS = '9000\r\nSCardEndTransaction(' if SYSTEM == 'Windows' else '9000\nSCardEndTransaction('
 
 AID_VERSION_MAP = {"000107A0000000620001": "2.1",  # java.lang
                    "000107A0000000620002": "2.2.0",  # java.io
@@ -175,8 +180,13 @@ class AIDScanner:
     base_path = BASE_PATH
     force_uninstall = FORCE_UNINSTALL  # if true, test applet will be always attempted to be removed. Set to False for faster testing
     force_no_safety_check = FORCE_NO_SAFETY_CHECK  # if True, no user prompt for authentication verification is performed. Leave this as False
-    gp_basic_command = GP_BASIC_COMMAND # command which will start GlobalPlatformPro binary
-    gp_auth_flag = GP_AUTH_FLAG # most of the card requires no additional authentication flag, some requires '--emv'
+    gp_basic_command = GP_BASIC_COMMAND  # command which will start GlobalPlatformPro binary
+    gp_auth_flag = GP_AUTH_FLAG  # most of the card requires no additional authentication flag, some requires '--emv'
+    gp_uninstall_command = GP_BASIC_COMMAND + GP_AUTH_FLAG + ['--uninstall']  # command starting installation of applet
+    gp_install_command = GP_BASIC_COMMAND + GP_AUTH_FLAG + ['--install']  # command starting uninstall of applet
+
+    success_response_heuristics = SUCCESS_RESPONSE_HEURISTICS
+
     card_name = ""
     is_installed = True # if true, test applet is installed and will  be removed
     num_tests = 0 # number of executed tests (for performance measurements)
@@ -189,22 +199,23 @@ class AIDScanner:
         f.close()
 
         # create new cap file by zip of directories
-        shutil.make_archive('test.cap', 'zip', path.join(self.base_path,'template'))
+        shutil.make_archive('test.cap', 'zip', path.join(self.base_path, 'template'))
 
         package_hex = package.serialize()
 
         # remove zip suffix
-        os.remove('test.cap')
+        if os.path.exists('test.cap'):
+            os.remove('test.cap')
         os.rename('test.cap.zip', 'test.cap')
         # store used cap file
         copyfile('test.cap', path.join(self.base_path, 'results', 'test_{0}.cap'.format(package_hex)))
 
         # (try to) uninstall previous applet if necessary/required
         if uninstall or self.force_uninstall:
-            subprocess.run([self.gp_basic_command, self.gp_auth_flag, '--uninstall', 'test.cap'], stdout=subprocess.PIPE)
+            subprocess.run(self.gp_uninstall_command + ['test.cap'], stdout=subprocess.PIPE)
 
         # try to install test applet
-        result = subprocess.run([self.gp_basic_command, self.gp_auth_flag, '--install', 'test.cap', '--d'], stdout=subprocess.PIPE)
+        result = subprocess.run(self.gp_install_command + ['test.cap'] + ['--d'], stdout=subprocess.PIPE)
 
         # store gp result into log file
         result = result.stdout.decode("utf-8")
@@ -214,7 +225,7 @@ class AIDScanner:
 
         # heuristics to detect successful installation - log must contain error code 0x9000 followed by SCardEndTransaction
         # If installation fails, different error code is present
-        if result.find('9000\r\nSCardEndTransaction(') != -1:
+        if result.find(self.success_response_heuristics) != -1:
             return True
         else:
             return False
@@ -408,12 +419,12 @@ class AIDScanner:
     def test_upload_cap(self, cap_name, cap_version, supported_caps):
         print(" Going to upload cap file '" + cap_name + "' (JC API " + cap_version + ") ... ")
         # try to install test applet
-        subprocess.run([self.gp_basic_command, self.gp_auth_flag, '--uninstall', cap_name], stdout=subprocess.PIPE)
-        result = subprocess.run([self.gp_basic_command, self.gp_auth_flag, '--install', cap_name, '--d'], stdout=subprocess.PIPE)
+        subprocess.run(self.gp_uninstall_command + [cap_name], stdout=subprocess.PIPE)
+        result = subprocess.run(self.gp_install_command + [cap_name] + ['--d'], stdout=subprocess.PIPE)
         result = result.stdout.decode("utf-8")
         # heuristics to detect successful installation - log must contain error code 0x9000 followed by SCardEndTransaction
         # If installation fails, different error code is present
-        if result.find('9000\r\nSCardEndTransaction(') != -1:
+        if result.find(self.success_response_heuristics) != -1:
             print("OK\n")
             supported_caps[cap_version] = True
         else:
@@ -434,7 +445,7 @@ class AIDScanner:
         if card_name == "":
             card_name = input("Please enter card name: ")
 
-        result = subprocess.run([self.gp_basic_command, self.gp_auth_flag, '--i'], stdout=subprocess.PIPE)
+        result = subprocess.run(self.gp_basic_command + self.gp_auth_flag + ['--i'], stdout=subprocess.PIPE)
         result_text = result.stdout.decode("utf-8")
 
         atr_before = "http://smartcard-atr.appspot.com/parse?ATR="
@@ -491,7 +502,7 @@ class AIDScanner:
         f.close()
 
         # uninstall any previous installation of applet
-        result = subprocess.run([self.gp_basic_command, self.gp_auth_flag, '--uninstall', 'test.cap'], stdout=subprocess.PIPE)
+        result = subprocess.run(self.gp_uninstall_command + ['test.cap'], stdout=subprocess.PIPE)
         result_text = result.stdout.decode("utf-8")
         self.is_installed = False
 
@@ -508,7 +519,7 @@ class AIDScanner:
         input("\nPress enter to continue...")
         print("Going to list applets, please wait...")
 
-        result = subprocess.run([self.gp_basic_command, self.gp_auth_flag, '--list', '--d'], stdout=subprocess.PIPE)
+        result = subprocess.run(self.gp_basic_command + self.gp_auth_flag + ['--list'] + ['--d'], stdout=subprocess.PIPE)
         result_text = result.stdout.decode("utf-8")
         print(result_text)
 
@@ -538,6 +549,10 @@ class AIDScanner:
 
         # obtain card basic info
         card_info = self.get_card_info(self.card_name)
+
+        # create folder for results, if doesn't exist
+        if not os.path.exists('./results/'):
+            os.mkdir('./results/', 0o755)
 
         # try to upload cap files converted with different version of JC convertor
         supported_caps = {}

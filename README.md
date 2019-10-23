@@ -10,12 +10,11 @@ Works by attempting to install small applet referencing particular package and i
 
 WARNING: Multiple incorrect authentication attempts to smartcard may brick your card. Make sure you known what you are doing. 
 
-1. Make sure GlobalPlatformPro tool is able to list installed applets and upload new ones for the target card. Verify correct functionality for 'gp.exe -list', 'gp.exe -install test_211.cap' (example for Windows). Some cards (e.g., G&D 3.2, 4.x, 6.0 requires additional '-emv' flag). If you need to run as 'java -jar gp.jar', create wrapping script for gp command.
-2. Edit jcAIDScan.py and set variable GP_BASIC_COMMAND to execute GlobalPlatformPro tool (in most cases, preset "GP_BASIC_COMMAND = 'gp.exe'" is sufficient. Change to script from first step otherwise.
-3. If your card requires additional authentication parameters for GPPro, edit jcAIDScan.py and change GP_AUTH_FLAG variable to desired one  In most cases, preset "GP_AUTH_FLAG = ''" is fine. Change to "GP_AUTH_FLAG = '--emv'" for G&D 3.2, 4.x, 6.0 cards.
-4. Run jcAIDScan.py and follow the instructions (the tool will first try to authenticate and list installed applets. Do NOT continue if this command fails!)
-5. Investigate the resulting output (also stored in your_card_name_AIDSUPPORT_atr.csv file)
-6. The results for (some) cards from [JCAlgTest](http://jcalgtest.org) database are already available [here](https://www.fi.muni.cz/~xsvenda/jcalgtest/table.html#package_support). Please consider to send the results for your card as well (petr@svenda.com)
+1. Make sure GlobalPlatformPro tool is able to list installed applets and upload new ones for the target card. Verify correct functionality for 'gp.exe -list', 'gp.exe -install test_211.cap' (example for Windows). Some cards (e.g., G&D 3.2, 4.x, 6.0 requires additional '-emv' flag). The current implementation detects operating system, so there is no need to changing commands calling gp in code.
+2. If your card requires additional authentication parameters for GPPro, edit jcAIDScan.py and change GP_AUTH_FLAG variable to desired one  In most cases, preset "GP_AUTH_FLAG = ''" is fine. Change to "GP_AUTH_FLAG = '--emv'" for G&D 3.2, 4.x, 6.0 cards.
+3. Run jcAIDScan.py and follow the instructions (the tool will first try to authenticate and list installed applets. Do NOT continue if this command fails!)
+4. Investigate the resulting output (also stored in your_card_name_AIDSUPPORT_atr.csv file)
+5. The results for (some) cards from [JCAlgTest](http://jcalgtest.org) database are already available [here](https://www.fi.muni.cz/~xsvenda/jcalgtest/table.html#package_support). Please consider to send the results for your card as well (petr@svenda.com)
 
 ## Example output for Athena IDprotect card
 
