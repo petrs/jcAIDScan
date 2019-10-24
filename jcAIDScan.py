@@ -23,37 +23,43 @@ GP_AUTH_FLAG = []  # most of the card requires no additional authentication flag
 
 SUCCESS_RESPONSE_HEURISTICS = '9000\r\nSCardEndTransaction(' if SYSTEM == 'Windows' else '9000\nSCardEndTransaction('
 
-AID_VERSION_MAP = {"000107A0000000620001": "2.1",  # java.lang
-                   "000107A0000000620002": "2.2.0",  # java.io
-                   "000107A0000000620003": "2.2.0",  # java.rmi
+AID_VERSION_MAP = {"000107A0000000620001": "JC 2.1",  # java.lang
+                   "000107A0000000620002": "JC 2.2.0",  # java.io
+                   "000107A0000000620003": "JC 2.2.0",  # java.rmi
                    # javacard.framework
-                   "000107A0000000620101": "2.1", "010107A0000000620101": "2.2.0", "020107A0000000620101": "2.2.1",
-                   "030107A0000000620101": "2.2.2", "040107A0000000620101": "3.0.1", "050107A0000000620101": "3.0.4",
-                   "060107A0000000620101": "3.0.5",
+                   "000107A0000000620101": "JC 2.1", "010107A0000000620101": "JC 2.2.0", "020107A0000000620101": "JC 2.2.1",
+                   "030107A0000000620101": "JC 2.2.2", "040107A0000000620101": "JC 3.0.1", "050107A0000000620101": "JC 3.0.4",
+                   "060107A0000000620101": "JC 3.0.5",
                    # javacard.framework.service
-                   "000108A000000062010101": "2.2.0",
+                   "000108A000000062010101": "JC 2.2.0",
                    # javacard.security
-                   "000107A0000000620102": "2.1", "010107A0000000620102": "2.1.1", "020107A0000000620102": "2.2.1",
-                   "030107A0000000620102": "2.2.2", "040107A0000000620102": "3.0.1", "050107A0000000620102": "3.0.4",
-                   "060107A0000000620102": "3.0.5",
+                   "000107A0000000620102": "JC 2.1", "010107A0000000620102": "JC 2.1.1", "020107A0000000620102": "JC 2.2.1",
+                   "030107A0000000620102": "JC 2.2.2", "040107A0000000620102": "JC 3.0.1", "050107A0000000620102": "JC 3.0.4",
+                   "060107A0000000620102": "JC 3.0.5",
                    # javacardx.crypto
-                   "000107A0000000620201": "2.1", "010107A0000000620201": "2.1.1", "020107A0000000620201": "2.2.1",
-                   "030107A0000000620201": "2.2.2", "040107A0000000620201": "3.0.1", "050107A0000000620201": "3.0.4",
-                   "060107A0000000620201": "3.0.5",
+                   "000107A0000000620201": "JC 2.1", "010107A0000000620201": "JC 2.1.1", "020107A0000000620201": "JC 2.2.1",
+                   "030107A0000000620201": "JC 2.2.2", "040107A0000000620201": "JC 3.0.1", "050107A0000000620201": "JC 3.0.4",
+                   "060107A0000000620201": "JC 3.0.5",
                    # javacardx.biometry (starting directly from version 1.2 - previous versions all from 2.2.2)
-                   "000107A0000000620202": "2.2.2", "010107A0000000620202": "2.2.2", "020107A0000000620202": "2.2.2",
-                   "030107A0000000620202": "3.0.5",
-                   "000107A0000000620203": "2.2.2",  # javacardx.external
-                   "000107A0000000620204": "3.0.5",  # javacardx.biometry1toN
-                   "000107A0000000620205": "3.0.5",  # javacardx.security
+                   "000107A0000000620202": "JC 2.2.2", "010107A0000000620202": "JC 2.2.2", "020107A0000000620202": "JC 2.2.2",
+                   "030107A0000000620202": "JC 3.0.5",
+                   "000107A0000000620203": "JC 2.2.2",  # javacardx.external
+                   "000107A0000000620204": "JC 3.0.5",  # javacardx.biometry1toN
+                   "000107A0000000620205": "JC 3.0.5",  # javacardx.security
                    # javacardx.framework.util
-                   "000108A000000062020801": "2.2.2", "010108A000000062020801": "3.0.5",
-                   "000109A00000006202080101": "2.2.2",  # javacardx.framework.util.intx
-                   "000108A000000062020802": "2.2.2",  # javacardx.framework.math
-                   "000108A000000062020803": "2.2.2",  # javacardx.framework.tlv
-                   "000108A000000062020804": "3.0.4",  # javacardx.framework.string
-                   "000107A0000000620209": "2.2.2",  # javacardx.apdu
-                   "000108A000000062020901": "3.0.5",  # javacardx.apdu.util
+                   "000108A000000062020801": "JC 2.2.2", "010108A000000062020801": "JC 3.0.5",
+                   "000109A00000006202080101": "JC 2.2.2",  # javacardx.framework.util.intx
+                   "000108A000000062020802": "JC 2.2.2",  # javacardx.framework.math
+                   "000108A000000062020803": "JC 2.2.2",  # javacardx.framework.tlv
+                   "000108A000000062020804": "JC 3.0.4",  # javacardx.framework.string
+                   "000107A0000000620209": "JC 2.2.2",  # javacardx.apdu
+                   "000108A000000062020901": "JC 3.0.5",  # javacardx.apdu.util
+                   # org.globalplatform
+                   "000106A00000015100": "GP 2.1.1", "010106A00000015100": "GP 2.2", "020106A00000015100": "GP 2.2",
+                   "030106A00000015100": "GP 2.2", "040106A00000015100": "GP 2.2", "050106A00000015100": "GP 2.2.1",
+                   "060106A00000015100": "GP 2.2.1",
+                   # visa.openplatform
+                   "000107A0000000030000": "OP 2.0",
                    }
 
 AID_NAME_MAP = {"A0000000620001": "java.lang",
@@ -74,7 +80,8 @@ AID_NAME_MAP = {"A0000000620001": "java.lang",
                 "A000000062020804":"javacardx.framework.string",
                 "A0000000620209": "javacardx.apdu",
                 "A000000062020901": "javacardx.apdu.util",
-                "A00000015100": "org.globalplatform"
+                "A00000015100": "org.globalplatform",
+                "A0000000030000": "visa.openplatform"
                 }
 
 
@@ -275,7 +282,7 @@ class AIDScanner:
 
         if len(supported) > 0:
             for supported_aid in supported:
-                print("{0} (since JC API {1})\n".format(supported_aid.get_readable_string(),
+                print("{0} (since API {1})\n".format(supported_aid.get_readable_string(),
                                                         supported_aid.get_first_jcapi_version()))
         else:
             print("No items")
@@ -416,6 +423,20 @@ class AIDScanner:
 
         self.print_supported(supported, supported_caps)
 
+    def scan_globalplatform_api(self, card_info, supported_caps, supported, tested):
+        MAX_MAJOR = 1
+        ADDITIONAL_MINOR = 1
+        # minor is tested with ADDITIONAL_MINOR additional values higher than expected from the given version of JC SDK).
+        # If highest version is detected, additional inspection is necessary - suspicious (some cards ignore minor version)
+
+        # intermediate results are saved after every tested package to preserve info even in case of card error
+        self.run_scan(TestCfg("A00000015100", 1, MAX_MAJOR, 0, 6 + ADDITIONAL_MINOR), supported, tested)
+        self.save_scan(card_info, supported_caps, supported, tested)
+        self.run_scan(TestCfg("A0000000030000", 1, MAX_MAJOR, 0, 1 + ADDITIONAL_MINOR), supported, tested)
+        self.save_scan(card_info, supported_caps, supported, tested)
+
+        self.print_supported(supported, supported_caps)
+
     def test_upload_cap(self, cap_name, cap_version, supported_caps):
         print(" Going to upload cap file '" + cap_name + "' (JC API " + cap_version + ") ... ")
         # try to install test applet
@@ -545,7 +566,7 @@ class AIDScanner:
                 return
 
         # restore template to good known state, uninstall applet etc.
-                self.prepare_for_testing()
+        self.prepare_for_testing()
 
         # obtain card basic info
         card_info = self.get_card_info(self.card_name)
@@ -556,11 +577,14 @@ class AIDScanner:
 
         # try to upload cap files converted with different version of JC convertor
         supported_caps = {}
+        supported = []
+        tested = {}
+        self.scan_globalplatform_api(card_info, supported_caps, supported, tested)
         self.test_upload_caps(supported_caps)
 
         # scan standard JC API
-        supported = []
-        tested = {}
+        #supported = []
+        #tested = {}
         elapsed = -time.perf_counter()
         self.scan_jc_api_305(card_info, supported_caps, supported, tested)
         elapsed += time.perf_counter()
@@ -572,6 +596,7 @@ class AIDScanner:
 def main():
     app = AIDScanner()
     app.scan_jc_api_305_complete()
+
 
 if __name__ == "__main__":
     main()
