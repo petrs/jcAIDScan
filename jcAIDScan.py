@@ -10,7 +10,7 @@ import textwrap
 
 
 # defaults
-SCRIPT_VERSION = '0.1.2'
+SCRIPT_VERSION = '0.1.3'
 BASE_PATH = '.'  # base path where script looks for templates an store output files
 
 FORCE_UNINSTALL = True  # if true, test applet will be always attempted to be removed. Set to False for faster testing
@@ -475,11 +475,24 @@ class AIDScanner:
         atr = result_text[pos + len(atr_before):end_pos]
         atr = atr.rstrip()
 
-        cplc_before = "Card CPLC:"
+        cplc_before = "CPLC:"
+        cplc_after = "ICPersonalizationEquipmentID="
         pos = result_text.find(cplc_before)
-        cplc = result_text[pos + len(cplc_before):]
+        if pos == -1:
+            pos = 0
+
+        pos_end = result_text.find(cplc_after)
+        if pos_end == -1:
+            pos_end = len(result_text)
+        else:
+            pos_end = pos_end + len(cplc_after) + 8 # +8 is because of equipment id, e.g., B11801EE
+
+
+        cplc = result_text[pos + len(cplc_before):pos_end]
+
         cplc = cplc.rstrip()
         cplc = cplc.replace(":", ";")
+        cplc = cplc.replace("      ", "")
 
         return CardInfo(card_name, atr, cplc, result_text)
 
