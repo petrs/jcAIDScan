@@ -58,6 +58,20 @@ AID_VERSION_MAP = {"000107A0000000620001": "JC 2.1",  # java.lang
                    "000106A00000015100": "GP 2.1.1", "010106A00000015100": "GP 2.2", "020106A00000015100": "GP 2.2",
                    "030106A00000015100": "GP 2.2", "040106A00000015100": "GP 2.2", "050106A00000015100": "GP 2.2.1",
                    "060106A00000015100": "GP 2.2.1",
+                   # org.globalplatform.contactless
+                   "000106A00000015102": "GP 2.2.1", "010106A00000015102": "GP 2.2.1", "020106A00000015102": "GP 2.2.1",
+                   "030106A00000015102": "GP 2.3", "040106A00000015102": "GP 2.3", "050106A00000015102": "GP 2.3",
+                   "060106A00000015102": "GP 2.3",
+                   # org.globalplatform.securechannel
+                   "000106A00000015103": "GP 2.2.1", "010106A00000015103": "GP 2.2.1", "020106A00000015103": "GP 2.2.1",
+                   "030106A00000015103": "GP 2.3", "040106A00000015103": "GP 2.3",
+                   # org.globalplatform.securechannel.provider
+                   "000106A00000015104": "GP 2.2.1", "010106A00000015104": "GP 2.2.1", "020106A00000015104": "GP 2.2.1",
+                   # org.globalplatform.privacy
+                   "000106A00000015105": "GP 2.2.1", "010106A00000015105": "GP 2.2.1", "020106A00000015105": "GP 2.2.1",
+                   # org.globalplatform.filesystem
+                   "000106A00000015106": "GP 2.2.1", "010106A00000015106": "GP 2.2.1", "020106A00000015106": "GP 2.2.1",
+
                    # visa.openplatform
                    "000107A0000000030000": "OP 2.0",
                    }
@@ -81,6 +95,11 @@ AID_NAME_MAP = {"A0000000620001": "java.lang",
                 "A0000000620209": "javacardx.apdu",
                 "A000000062020901": "javacardx.apdu.util",
                 "A00000015100": "org.globalplatform",
+                "A00000015102": "org.globalplatform.contactless",
+                "A00000015103": "org.globalplatform.securechannel",
+                "A00000015104": "org.globalplatform.securechannel.provider",
+                "A00000015105": "org.globalplatform.privacy",
+                "A00000015106": "org.globalplatform.filesystem",
                 "A0000000030000": "visa.openplatform"
                 }
 
@@ -430,8 +449,25 @@ class AIDScanner:
         # If highest version is detected, additional inspection is necessary - suspicious (some cards ignore minor version)
 
         # intermediate results are saved after every tested package to preserve info even in case of card error
-        self.run_scan(TestCfg("A00000015100", 1, MAX_MAJOR, 0, 6 + ADDITIONAL_MINOR), supported, tested)
+        self.run_scan(TestCfg("A00000015100", 1, MAX_MAJOR, 0, 8 + ADDITIONAL_MINOR), supported, tested)
         self.save_scan(card_info, supported_caps, supported, tested)
+
+        self.run_scan(TestCfg("A00000015102", 1, MAX_MAJOR, 0, 4 + ADDITIONAL_MINOR), supported, tested)
+        self.save_scan(card_info, supported_caps, supported, tested)
+
+        self.run_scan(TestCfg("A00000015103", 1, MAX_MAJOR, 0, 1 + ADDITIONAL_MINOR), supported, tested)
+        self.save_scan(card_info, supported_caps, supported, tested)
+
+        self.run_scan(TestCfg("A00000015104", 1, MAX_MAJOR, 0, 1 + ADDITIONAL_MINOR), supported, tested)
+        self.save_scan(card_info, supported_caps, supported, tested)
+
+        self.run_scan(TestCfg("A00000015105", 1, MAX_MAJOR, 0, 0 + ADDITIONAL_MINOR), supported, tested)
+        self.save_scan(card_info, supported_caps, supported, tested)
+
+        self.run_scan(TestCfg("A00000015106", 1, MAX_MAJOR, 0, 0 + ADDITIONAL_MINOR), supported, tested)
+        self.save_scan(card_info, supported_caps, supported, tested)
+
+
         self.run_scan(TestCfg("A0000000030000", 1, MAX_MAJOR, 0, 1 + ADDITIONAL_MINOR), supported, tested)
         self.save_scan(card_info, supported_caps, supported, tested)
 
@@ -486,7 +522,6 @@ class AIDScanner:
             pos_end = len(result_text)
         else:
             pos_end = pos_end + len(cplc_after) + 8 # +8 is because of equipment id, e.g., B11801EE
-
 
         cplc = result_text[pos + len(cplc_before):pos_end]
 
