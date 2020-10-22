@@ -71,6 +71,8 @@ AID_VERSION_MAP = {"000107A0000000620001": "JC 2.1",  # java.lang
                    "000106A00000015105": "GP 2.2.1", "010106A00000015105": "GP 2.2.1", "020106A00000015105": "GP 2.2.1",
                    # org.globalplatform.filesystem
                    "000106A00000015106": "GP 2.2.1", "010106A00000015106": "GP 2.2.1", "020106A00000015106": "GP 2.2.1",
+                   # org.globalplatform.upgrade
+                   "000106A00000015107": "GP 2.?", "010106A00000015107": "GP 2.?",
 
                    # visa.openplatform
                    "000107A0000000030000": "OP 2.0",
@@ -100,6 +102,7 @@ AID_NAME_MAP = {"A0000000620001": "java.lang",
                 "A00000015104": "org.globalplatform.securechannel.provider",
                 "A00000015105": "org.globalplatform.privacy",
                 "A00000015106": "org.globalplatform.filesystem",
+                "A00000015107": "org.globalplatform.upgrade",
                 "A0000000030000": "visa.openplatform"
                 }
 
@@ -467,6 +470,8 @@ class AIDScanner:
         self.run_scan(TestCfg("A00000015106", 1, MAX_MAJOR, 0, 0 + ADDITIONAL_MINOR), supported, tested)
         self.save_scan(card_info, supported_caps, supported, tested)
 
+        self.run_scan(TestCfg("A00000015107", 1, MAX_MAJOR, 0, 0 + ADDITIONAL_MINOR), supported, tested)
+        self.save_scan(card_info, supported_caps, supported, tested)
 
         self.run_scan(TestCfg("A0000000030000", 1, MAX_MAJOR, 0, 1 + ADDITIONAL_MINOR), supported, tested)
         self.save_scan(card_info, supported_caps, supported, tested)
